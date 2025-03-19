@@ -1,74 +1,137 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import {
+    Text,
+    View,
+    TouchableOpacity,
+    ImageBackground,
+    StyleSheet,
+} from "react-native";
+import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
+import React, { useState } from "react";
+import ModalData from "../../Components/ModalData";
+import * as LocalAuthentication from "expo-local-authentication";
+import { useNavigation, StackActions } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import imageFond from "../../assets/images/fondApp.png";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export default function Index() {
+    const navigation = useNavigation();
+    const [modalVisible, setModalVisible] = useState(false);
+    const [listKey, setListKey] = useState([]);
 
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+   
+    // récupération d'un tableau contenant toutes les références dans le AsyncStorage
+    const getArray = async () => {
+        try {
+            const jsonValue = await AsyncStorage.getItem("listKey");
+            if (jsonValue !== null) {
+                setListKey(JSON.parse(jsonValue));
+                
+            }
+        } catch (error) {
+            console.log("Erreur lors de la récupération des references", error);
+        }
+    };
+    getArray();
+ 
+
+    // Fonction pour authentifier l'utilisateur avec biométrie
+    const authenticateWithBiometrics = async () => {
+        const result = await LocalAuthentication.authenticateAsync({
+            promptMessage: "Authentifie-toi avec ton empreinte digitale",
+            fallbackLabel: "Utiliser un code",
+        });
+
+        if (result.success) {
+            navigation.dispatch(
+                StackActions.replace("liste", { listKey: listKey })
+            );
+        } else {
+            alert("Authentification échouée");
+        }
+    };
+    return (
+        <SafeAreaProvider>
+            <SafeAreaView
+                style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginHorizontal: 0,
+                }}
+            >
+                <ImageBackground
+                    source={imageFond}
+                    resizeMode="cover"
+                    style={styles.image}
+                >
+                    <TouchableOpacity
+                        style={[styles.button, styles.btn1]}
+                        onPress={authenticateWithBiometrics}
+                    >
+                       
+                            <Text style={[styles.textLabel]}>
+                                Accéder à la liste
+                            </Text>
+                    
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.button, styles.btn2]}
+                        onPress={() => setModalVisible(true)}
+                    >
+                        <Text style={[styles.textLabel]}>
+                            Ajouter un mot de passe
+                        </Text>
+                    </TouchableOpacity>
+                    {modalVisible && (
+                        <ModalData
+                            setModalVisible={setModalVisible}
+                            listKey={listKey}
+                        />
+                    )}
+                </ImageBackground>
+            </SafeAreaView>
+        </SafeAreaProvider>
+    );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+    button: {
+        borderRadius: 10,
+        padding: 15,
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
+        width: 250,
+        margin: 20,
+        backgroundColor: "rgba(0,0,0,0.7)",
+    },
+    
+    btn1: {
+        borderColor: "rgba(3, 192, 74,0.7)",
+        borderWidth: 3,
+        
+    },
+    btn2: {
+        borderColor: "rgba(0,157,245,0.7)",
+        borderWidth: 3,
+    },
+    textLabel: {
+        fontSize: 25,
+        color: "#fff",
+    },
+
+    buttonIcon: {
+        paddingRight: 8,
+    },
+    buttonLabel: {
+        color: "#fff",
+        fontSize: 16,
+    },
+    image: {
+        flex: 1, // L'image prendra tout l'espace disponible
+        width: "100%", // L'image s'étendra sur toute la largeur
+        height: "100%", // L'image s'étendra sur toute la hauteur
+        justifyContent: "center", // Centrer le contenu si nécessaire
+        alignItems: "center", // Centrer le contenu si nécessaire
+    },
 });
